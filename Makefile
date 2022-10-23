@@ -56,15 +56,16 @@ PROTOC-API-LINTER := $(TOOLS_BIN_DIR)/api-linter
 $(GENSRC): $(PROTOC-GEN-GO) $(PROTOC-GEN-GO-GRPC) $(PROTOC-GEN-GRPC-GATEWAY) $(PROTOC-API-LINTER) $(PROTOC-GEN-OPENAPIV2) $(PROTOBUF_DEPS)
 	mkdir -p pkg/generated/protobuf
 	$(PROTOC-API-LINTER) -I third_party/googleapis/ -I . $(PROTOBUF_DEPS) #--set-exit-status # TODO: add strict checking
-	protoc --plugin=protoc-gen-go=$(TOOLS_BIN_DIR)/protoc-gen-go \
-	       --go_opt=module=$(GO_MODULE) --go_out=. \
-	       --plugin=protoc-gen-go-grpc=$(TOOLS_BIN_DIR)/protoc-gen-go-grpc \
-	       --go-grpc_opt=module=$(GO_MODULE) --go-grpc_out=. \
-	       --plugin=protoc-gen-grpc-gateway=$(TOOLS_BIN_DIR)/protoc-gen-grpc-gateway \
-	       --grpc-gateway_opt=module=$(GO_MODULE) --grpc-gateway_opt=logtostderr=true --grpc-gateway_out=. \
-	       --plugin=protoc-gen-openapiv2=$(TOOLS_BIN_DIR)/protoc-gen-openapiv2 \
-	       --openapiv2_out . \
-		   -I third_party/googleapis/ -I . $(PROTOBUF_DEPS)
+	docker run --entrypoint protoc -it --rm -v $(shell readlink -f .):/defs namely/protoc-all \
+			--plugin=protoc-gen-go=/usr/local/bin/protoc-gen-go \
+			--go_opt=module=$(GO_MODULE) --go_out=. \
+			--plugin=protoc-gen-go-grpc=/usr/local/bin/protoc-gen-go-grpc \
+			--go-grpc_opt=module=$(GO_MODULE) --go-grpc_out=. \
+			--plugin=protoc-gen-grpc-gateway=/usr/local/bin/protoc-gen-grpc-gateway \
+			--grpc-gateway_opt=module=$(GO_MODULE) --grpc-gateway_opt=logtostderr=true --grpc-gateway_out=. \
+			--plugin=protoc-gen-openapiv2=/usr/local/bin/protoc-gen-openapiv2 \
+			--openapiv2_out . \
+			-I /opt/include -I third_party/googleapis/ -I . $(PROTOBUF_DEPS)
 
 lint: ## Runs golangci-lint
 	$(GOBIN)/golangci-lint run -v ./...
